@@ -18,8 +18,6 @@ def check_brackets(s: str):
             return True
     return False
 
-test_string = '''MATCH (p:Person {name: 'Eminem'})-[:ACTED_IN*2]-(others:Person) RETURN  others.name'''
-
 def convert_to_single_line(cypher_statement: str):
     """
     Some statments are split over multiple lines, this function converts them to a single line
