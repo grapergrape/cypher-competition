@@ -1,7 +1,10 @@
 
 # Cypher Competition Solution
 
-This repository contains the solution for the Cypher competition.
+This repository contains my solution for the Cypher competition.
+
+## Author
+Gašper Škornik
 
 ## Description
 
