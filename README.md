@@ -8,7 +8,7 @@ Gašper Škornik
 
 ## Description
 
-The solution consists of several Python scripts that are used to pre-process the data, execute the main program, and reconstruct the results. The program reads a CSV file, processes the Cypher queries, and outputs the results. It works by extracting just the part of the cypher query that is directed, then it validates the direction of that part based on schema, extracts the vectors and paths from the corrected sub query and inserts them into the original query.
+This code consists of several Python scripts that are used to pre-process the data, execute the main program, and reconstruct the results. It reads a CSV file, processes the Cypher queries, and outputs the results. It works by extracting just the part of the cypher query that is directed, then it validates the direction of that part based on schema, extracts the vectors and paths from the corrected sub query and inserts them into the original query.
 
 ## Flow
 
