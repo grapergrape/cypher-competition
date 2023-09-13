@@ -24,7 +24,7 @@ Extracted sequence:
 Output after insertion of sequence:
 MATCH (a:Person:Actor)-[:ACTED_IN]->(:Movie) RETURN a, count(*)
 
-The script also atuomatically validates the output and its overall performance.
+The script also automatically validates the output and it's overall performance.
 
 ## Scripts
 
