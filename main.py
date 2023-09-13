@@ -1,7 +1,6 @@
 import csv
 from reconstruction import solver
 from preprocessing import convert_to_single_line, prepare_string
-from termcolor import colored
 
 def main(csv_path: str, row_number: int):
     """
