@@ -192,7 +192,7 @@ def identify_nodes(directed_statments: list, relationship_info: dict, schema: st
                     if start_index != -1:
                         part_type = 'source' if idx == 0 else 'target'
                         # save info in separate keys for 'source' and 'target'
-                        nodes_dict[i][part_type] = {"directed_statment": i, "part": part_type, "name": body_part, "start_index": start_index, "handbook_item": item}
+                        nodes_dict[i][part_type] = {"directed_statment": i, "part": part_type, "name": body_part, "start_index": start_index, "schema_item": item}
     
     return nodes_dict
 
