@@ -27,14 +27,12 @@ def convert_to_single_line(cypher_statement: str):
     """
     return cypher_statement.replace("\n", " ").replace("\r", "").replace("    ", " ")
 
-
-
 def extract_directed_statement(text: str):
     """
     This function extracts the directed statements from the cypher query
 
-    Input: cypher query
-    Output: list of directed statements
+    Input: cypher query: 'MATCH (a)-[:RELATIONSHIP]->(b) RETURN a, b'
+    Output: list of directed statements found inside the cypher query: ['(a)-[:RELATIONSHIP]->(b)']
     """
     # Initialize list to hold directed staments
     directed_statements = []
@@ -199,10 +197,12 @@ def identify_nodes(directed_statments: list, relationship_info: dict, schema: st
 
 def split_into_substatements(statments: list):
     """
-    Function that splits the directed_statments into substatements
-
-    Input: list of directed_statments
-    Output: list of substatements like: ['(a)-[:ACTED_IN]->(b)', '(b)<-[:ACTED_IN]-(c)']
+    A function that splits the complex directed_statements into sub-statements while simple ones remain the same. This process may alter the total number of nodes,
+    but the number of vectors and paths remains unaltered. That's whyit can be used for accurate direction validation and standardization purposes,
+    regardless of the complexity of the input Cypher query.
+    
+    Input: list of a single directed_statment: ['(a)-[:RELATIONSHIP]->(b)<-[:RELATIONSHIP]-(c)']
+    Output: list of substatements like: ['(a)-[:RELATIONSHIP]->(b)', '(b)<-[:RELATIONSHIP]-(c)']
     """
     substatements = []
 
@@ -324,8 +324,9 @@ def remove_brackets(input_string: str):
 
 def check_syntax(cypher_substring: str, schema: list):
     """
-    Function that evaluates if the cypher_substring is syntactically correct according to the schema
-
+    Function that evaluates if the cypher_substring is syntactically correct according to the schema, this function also marks variable length relationships as syntactically incorrect,
+    thats why we need to raise the variable relationship flag before calling this function.
+    
     Input: cypher_substring, schema
     Output: True if syntactically correct, False otherwise
     """
@@ -342,6 +343,8 @@ def check_syntax(cypher_substring: str, schema: list):
             cypher_rel = cypher_elements[1][1:-1] 
             cypher_target = cypher_elements[0].split(":")[1] 
         else:
+            #Error handling if we're still unable to identify the relationship node while it isn't empty, we can still check the direction if source and target nodes are present
+            #nodes are unidentified because we do not know what nodes are used since identify_nodes function needs relationship info which we do not have here
             unidentified_node1 = cypher_elements[0].split(":")[1]
             cypher_rel = cypher_elements[1][1:-1]
             unidentified_node2 = cypher_elements[2].split(":")[1]
