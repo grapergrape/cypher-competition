@@ -304,7 +304,7 @@ def process_strings(input_list: list) -> list[str]:
 
 def remove_brackets(input_string: str) -> str:
     """
-    Function that removes the brackets from the input_string if the relationship node is empty like []
+    Function that removes the brackets from the input_string if the relationship node contains no relevant data
 
     Input: input_string like: '(a)-[:]->(b)'
     Output: processed_string like: '(a)-->(b)'
@@ -324,7 +324,8 @@ def remove_brackets(input_string: str) -> str:
 
 def check_syntax(cypher_substring: str, schema: list) -> bool:
     """
-    Function that evaluates if the cypher_substring is syntactically correct according to the schema, this function also marks variable length relationships as syntactically incorrect,
+    Function that evaluates if the cypher_substring is syntactically correct according to the schema, 
+    this function also marks variable length relationships as syntactically incorrect,
     thats why we need to raise the variable relationship flag before calling this function.
     
     Input: cypher_substring, schema
