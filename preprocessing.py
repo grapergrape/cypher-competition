@@ -1,6 +1,6 @@
 from regularex import get_mappings, process_relationship, process_target_source
 
-def check_brackets(s: str):
+def check_brackets(s: str) -> bool:
     """
     This function checks if the cypher query contains variable length relationships as those are not supposed
     to be processed by this code which marks them as 'Syntax error' if they do not make sense according to the schema
@@ -18,7 +18,7 @@ def check_brackets(s: str):
             return True
     return False
 
-def convert_to_single_line(cypher_statement: str):
+def convert_to_single_line(cypher_statement: str) -> str:
     """
     Some statments are split over multiple lines, this function converts them to a single line
 
@@ -27,7 +27,7 @@ def convert_to_single_line(cypher_statement: str):
     """
     return cypher_statement.replace("\n", " ").replace("\r", "").replace("    ", " ")
 
-def extract_directed_statement(text: str):
+def extract_directed_statement(text: str) -> list[str]:
     """
     This function extracts the directed statements from the cypher query
 
@@ -63,7 +63,7 @@ def extract_directed_statement(text: str):
 
     return directed_statements
 
-def extract_relationship(directed_statements: list):
+def extract_relationship(directed_statements: list) -> dict[int, tuple[list[str], list[int], bool]] :
     """
     This function extracts the relationship info from the directed statements
 
@@ -108,7 +108,7 @@ def extract_relationship(directed_statements: list):
 
     return info_dict
 
-def get_direction_arrows(directed_statements: list):
+def get_direction_arrows(directed_statements: list) -> dict[int, tuple[list[str], list[int], bool]]:
     """
     This function extracts the direction arrows from the directed statements
 
@@ -152,7 +152,7 @@ def get_direction_arrows(directed_statements: list):
 
     return patterns_dict
 
-def identify_nodes(directed_statments: list, relationship_info: dict, schema: str):
+def identify_nodes(directed_statments: list, relationship_info: dict, schema: str) -> dict[int, dict[str, dict]]:
     """
     Function that identifies the nodes in the directed_statments and returns them in a dictionary, only works if 
     relationship node is present
@@ -195,7 +195,7 @@ def identify_nodes(directed_statments: list, relationship_info: dict, schema: st
     return nodes_dict
 
 
-def split_into_substatements(statments: list):
+def split_into_substatements(statments: list) -> list[str]:
     """
     A function that splits the complex directed_statements into sub-statements while simple ones remain the same. This process may alter the total number of nodes,
     but the number of vectors and paths remains unaltered. That's whyit can be used for accurate direction validation and standardization purposes,
@@ -238,7 +238,7 @@ def split_into_substatements(statments: list):
                 nodes_indices.pop(0)
     return substatements
 
-def find_used_trios(cypher_string: str, schema_list: list):
+def find_used_trios(cypher_string: str, schema_list: list) -> list[tuple[str, str, str]]:
     """
     Function that finds the used schema in the cypher_string
 
@@ -274,7 +274,7 @@ def extract_schema(schema_str: str):
         schema_list.append((nodes[0], nodes[1], nodes[2]))
     return schema_list
 
-def process_strings(input_list: list):
+def process_strings(input_list: list) -> list[str]:
     """
     Function that processes the strings in the input_list to remove any data before : in the relationship node
     
@@ -302,7 +302,7 @@ def process_strings(input_list: list):
     
     return processed_list
 
-def remove_brackets(input_string: str):
+def remove_brackets(input_string: str) -> str:
     """
     Function that removes the brackets from the input_string if the relationship node is empty like []
 
@@ -322,7 +322,7 @@ def remove_brackets(input_string: str):
     
     return processed_string
 
-def check_syntax(cypher_substring: str, schema: list):
+def check_syntax(cypher_substring: str, schema: list) -> bool:
     """
     Function that evaluates if the cypher_substring is syntactically correct according to the schema, this function also marks variable length relationships as syntactically incorrect,
     thats why we need to raise the variable relationship flag before calling this function.
@@ -378,7 +378,7 @@ def check_syntax(cypher_substring: str, schema: list):
 
     return False
 
-def validate_direction(substatements: list, relationship_dict: dict, schema: str, identified_nodes: dict):
+def validate_direction(substatements: list, relationship_dict: dict, schema: str, identified_nodes: dict) -> list[str]:
     """
     Function that validates the direction of the relationships in the substatements
 
@@ -442,7 +442,7 @@ def validate_direction(substatements: list, relationship_dict: dict, schema: str
 
     return final_statments
 
-def prepare_string(row: list):
+def prepare_string(row: list) -> tuple[list[str], bool]:
     """
     Main function that prepares and processes the string for the extraction of the vectors
 

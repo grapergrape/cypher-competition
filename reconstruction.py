@@ -1,4 +1,4 @@
-def symbol_extractor(stringlist: list):
+def symbol_extractor(stringlist: list) -> list[str,]:
     """
     This function extracts the symbols resembling vectors from the input stringlist and returns them as a list
 
@@ -21,7 +21,7 @@ def symbol_extractor(stringlist: list):
                 i += 1
     return symbols
 
-def symbol_inserter(target_string: str, input_sequence: list):
+def symbol_inserter(target_string: str, input_sequence: list) -> str:
     """
     This function inserts the symbols from input_sequence into the target_string
     
@@ -48,7 +48,7 @@ def symbol_inserter(target_string: str, input_sequence: list):
 
 
 
-def solver(stringlist: list, target_string: str):
+def solver(stringlist: list, target_string: str) -> str:
     """
     This is the main function from this helper module that takes the input stringlist and the target string and returns the output string
     

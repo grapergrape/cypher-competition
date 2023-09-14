@@ -5,7 +5,7 @@ This file contains functions that are used to process the cypher queries to be m
 I tried to use as little regex as possible for this competition, even though I could completly avoid it
 I still used some, in the future I would like to rewrite this file to not use regex at all
 """
-def get_mappings(query: str, schema: str):
+def get_mappings(query: str, schema: str) -> str:
     """
     This function gets the mappings between the query and the schema like, converts all the nodes in the query to be like those in schema if possible
     
@@ -55,7 +55,7 @@ def get_mappings(query: str, schema: str):
 
     return query
 
-def infer_labels_from_schema(query: str, schema_dict: dict):
+def infer_labels_from_schema(query: str, schema_dict: dict) -> str:
     """
     This function infers the labels of nodes in the query that are not specified in the query
     like () or (a) or by looking at the schema and converting them to (a:Person) or (a:Person:Actor)
@@ -75,7 +75,7 @@ def infer_labels_from_schema(query: str, schema_dict: dict):
     return query
 
 
-def process_relationship(cypher: str, schema: str):
+def process_relationship(cypher: str, schema: str) -> str:
     """
     This function processes the relationships in the cypher query to be more similar to the schema, removes abnormalities
     If there is multiple relationships between two nodes, it will only keep the first one, 
@@ -99,7 +99,7 @@ def process_relationship(cypher: str, schema: str):
 
     return cypher
 
-def process_target_source(cypher: str, schema: str):
+def process_target_source(cypher: str, schema: str) -> str:
     """
     This function processes the target and source nodes in the cypher query to be more similar to the schema
 

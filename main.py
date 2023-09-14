@@ -2,7 +2,7 @@ import csv
 from reconstruction import solver
 from preprocessing import convert_to_single_line, prepare_string
 
-def main(csv_path: str, row_number: int):
+def main(csv_path: str, row_number: int) -> bool:
     """
     Main function that loads the desired line form csv file and 
     calls the main processing function on it and then compares the output to the correct anwser
@@ -17,14 +17,14 @@ def main(csv_path: str, row_number: int):
             next(csv_reader)
         row = next(csv_reader)
 
-        #Call main processing funciton on input cypher statemenet
+        # Call main processing funciton on input cypher statemenet
         output, variable_length_flag = prepare_string(row)
 
-        #Check if the input statement is of variable length (contains *)
+        # Check if the input statement is of variable length (contains *)
         if not variable_length_flag:
             solution = solver(output, f'''{convert_to_single_line(row[0])}''')
         else:
-            #When variable length is present, the output should just match the input statement
+            # When variable length is present, the output should just match the input statement
             solution = output
         print("Input statement:")
         print(convert_to_single_line(row[0]))
@@ -32,15 +32,15 @@ def main(csv_path: str, row_number: int):
         print("My output:")
         print(solution)
         if row[2] == '':
-            #Some rows were marked as incorrect syntax by Tomaz and were left empty
-            #Since my code marks lines with incorrect syntax as 'Syntax error', I will compare it to that
+            # Some rows were marked as incorrect syntax by Tomaz and were left empty
+            # Since my code marks lines with incorrect syntax as 'Syntax error', I will compare it to that
             correct_anwser = 'Syntax error'
         else:
            correct_anwser = convert_to_single_line(row[2])
         print('------------------------------')
         print('Correct input anwser:')
         print(correct_anwser)
-        #Compare the output of my code to the correct anwser from csv file
+        # Compare the output of my code to the correct anwser from csv file
         if solution == correct_anwser:
             print('Evaluation: Correct')
             return True
@@ -49,7 +49,9 @@ def main(csv_path: str, row_number: int):
         else:
             print('Evaluation: Incorrect')
             return False
+        
 if __name__ == '__main__':
+    # Run the main function on all 74 lines from csv file
     final_evaluation = []   
     for i in range(74):
         print("===============================================================================")
