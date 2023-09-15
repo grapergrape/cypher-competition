@@ -1,7 +1,6 @@
-
 # Cypher Competition Solution
 
-This repository contains my solution for the Cypher competition.
+This repository contains my regex-less, raw parsing of input statments solution for the Cypher competition.
 
 ## Author
 Gašper Škornik
@@ -9,6 +8,8 @@ Gašper Škornik
 ## Description
 
 This code consists of several Python scripts that are used to pre-process the data, execute the main program, and reconstruct the results. It reads a CSV file, processes the Cypher queries, and outputs the results. It works by extracting just the part of the cypher query that is directed, then it validates the direction of that part based on schema, extracts the vectors and paths from the corrected sub query and inserts them into the original query.
+
+After finding out that number of lines is included as a criteria in the competition I've went ahead and went all in on the regex-less vector validation, since I've probably already had too much lines before.
 
 ## Flow
 
@@ -36,6 +37,8 @@ The script also automatically validates the output and it's overall performance.
 - `main.py`: This is the main script that executes the program. It processes the Cypher queries and outputs the results.
 
 - `reconstruction.py`: This helper script is used to reconstruct the results. It takes the output from the main script and reconstructs the results in a more readable format.
+
+- `dicts.py`: This helper script is used to store rleevant information about source/target nodes, relationship nodes in organized dictionaries.
 
 ## Usage
 
