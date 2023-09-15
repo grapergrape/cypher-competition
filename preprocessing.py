@@ -1,5 +1,4 @@
-from regularex import get_mappings, process_relationship, process_target_source
-
+from dicts import extract_relationship, identify_nodes
 def check_brackets(s: str) -> bool:
     """
     This function checks if the cypher query contains variable length relationships as those are not supposed
@@ -26,6 +25,179 @@ def convert_to_single_line(cypher_statement: str) -> str:
     Output: cypher query in a single line
     """
     return cypher_statement.replace("\n", " ").replace("\r", "").replace("    ", " ")
+
+def infer_labels_from_schema(query: str, schema_dict: dict) -> str:
+    """
+    This function infers the labels of nodes in the query that are not specified in the query
+    like () or (a) or by looking at the schema and converting them to (a:Person) or (a:Person:Actor)
+
+    Input: query, schema_dict
+    Output: query with inferred labels
+    """
+    start = 0
+    while True:
+        start = query.find('(', start)
+        if start == -1: break
+        end = query.find(')', start)
+        if end == -1: break
+        node_name = query[start+1:end].strip()
+        
+        if node_name == '*' or node_name == '':
+            start = end + 1
+            continue
+
+        if ':' not in node_name:
+            if node_name in schema_dict:
+                query = query[:start] + f'({node_name}:{schema_dict[node_name]})' + query[end+1:]
+        start = end + 1
+        
+    return query
+
+def get_mappings(query: str, schema: str) -> str:
+    """
+    This function gets the mappings between the query and the schema like, converts all the nodes in the query to be like those in schema if possible
+    
+    Input: query, schema
+    Output: query with nodes mapped to schema    
+    """
+    # Extract nodes from schema
+    schema_nodes=[part.strip() for part in schema.replace('(', '').replace(')', '').split(',')]
+    schema_dict = {}
+    for i in range(0, len(schema_nodes), 3):
+        label = schema_nodes[i].strip()
+        relationship = schema_nodes[i+1].strip()
+        
+        if label in schema_dict:
+            schema_dict[label].append(relationship)
+        else:
+            schema_dict[label] = [relationship]
+
+    # Extract nodes from query
+    start = 0
+    query_nodes = []
+    while True:
+        start = query.find('(', start)
+        if start == -1: break
+        end = query.find(')', start)
+        if end == -1: break
+        node = query[start+1:end].strip()
+        query_nodes.append(node)
+        start = end+1
+
+    query_nodes_dict = {node.split(':')[0]: node for node in query_nodes if ':' in node}
+
+    # Iterate through the query nodes and update the query
+    for node in query_nodes:
+        if node == '*' or node == ' ':
+            continue
+
+        if ':' in node:
+            continue
+
+        # Check if the node is in schema_dict
+        if node in schema_dict:
+            query = query.replace(f'({node})', f'({node}:{schema_dict[node]})')
+        else:
+            # Check if there's a mapping in query_nodes_dict
+            if node in query_nodes_dict:
+                query = query.replace(f'({node})', f'({query_nodes_dict[node]})')
+            else:
+                # If not, raise an error
+                continue
+
+    # Handle nodes like () by inferring labels from the schema
+    query = infer_labels_from_schema(query, schema_dict)
+
+    return query
+
+
+def process_relationship(cypher: str, schema: str) -> str:
+    """
+    This function processes the relationships in the cypher query to be more similar to the schema, removes abnormalities
+    If there is multiple relationships between two nodes, it will only keep the first one, 
+    since two relationships between two same nodes should always have same 
+
+    Input: cypher query, schema
+    Output: cypher query with relationships processed
+    """
+    # Split the schema by "), (" to get a list of raw triples
+    raw_triples = schema.strip("()").split("), (")
+
+    # For each raw triple, split by ", " to get the nodes and relationship
+    triples = [triple.split(", ") for triple in raw_triples if triple.strip()]
+
+    # Initialize a processed cypher string
+    processed_cypher = ""
+
+    # Initialize a flag to denote if we're currently processing a relationship
+    processing_relationship = False
+
+    # Iterate through the characters of the cypher string
+    for char in cypher:
+        if char == '[':
+            processing_relationship = True
+            relationship = ""
+        
+        if processing_relationship:
+            relationship += char
+
+        if char == ']':
+            processing_relationship = False
+
+            # Check if the found relationship matches a relationship in the schema, if yes, replace it
+            for triple in triples:
+                source_node, relation, target_node = [t.strip(' `') for t in triple]
+                if relation in relationship:
+                    relationship = f'[{relation}]'
+                    break
+
+            processed_cypher += relationship
+        elif not processing_relationship:
+            processed_cypher += char
+
+    return processed_cypher
+
+def process_target_source(cypher: str, schema: str) -> str:
+    """
+    This function processes the target and source nodes in the cypher query to be more similar to the schema
+
+
+    Input: cypher query, schema
+    Output: cypher query with target and source nodes processed
+    """
+
+    # Split the schema by "), (" to get a list of raw triples
+    raw_triples = schema.strip("()").split("), (")
+
+    # For each raw triple, split by ", " to get the nodes and relationship
+    triples = [triple.split(", ") for triple in raw_triples if triple.strip()]
+
+    for triple in triples:
+        source_node, relation, target_node = [t.strip(' `') for t in triple]
+
+        # Lists to hold our cypher fragments
+        cypher_fragments = []
+        last_index = 0
+
+        # Find the next ( or ) starting at the given index
+        for index in range(len(cypher)):
+            if cypher[index] in ['(', ')']:
+                # Append the cypher fragment to our list
+                cypher_fragments.append(cypher[last_index:index+1])
+                last_index = index + 1
+
+        # Process the cypher fragments
+        for index, fragment in enumerate(cypher_fragments):
+            # If fragment starts with source_node or target_node, replace it
+            if fragment.lstrip('(`').startswith(source_node):
+                cypher_fragments[index] = f'({source_node})'
+            elif fragment.lstrip('(`').startswith(target_node):
+                cypher_fragments[index] = f'({target_node})'
+
+        # Join the processed fragments back into the cypher string
+        cypher = ''.join(cypher_fragments)
+
+    return cypher
 
 def extract_directed_statement(text: str) -> list[str]:
     """
@@ -62,138 +234,6 @@ def extract_directed_statement(text: str) -> list[str]:
                     start, end = -1, -1
 
     return directed_statements
-
-def extract_relationship(directed_statements: list) -> dict[int, tuple[list[str], list[int], bool]] :
-    """
-    This function extracts the relationship info from the directed statements
-
-    Input: list of directed statements
-    Output: dictionary of relationship info containing:
-        - info: list of relationship info
-        - start_indices: list of start indices of relationship info
-        - found_flag: flag indicating if relationship info was found
-    """
-
-    info_dict = {}
-
-    # Iterate over each directed statement
-    for i, directed_statement in enumerate(directed_statements):
-        # Initialize list to hold info from this directed_statement's relationships
-        info = []
-        # Initialize list to hold start indices of directed_statements
-        start_indices = []
-        # Flag for checking if we found a meaningful relationship node
-        found_flag = False
-        # Split the directed_statement on "-"
-        parts = directed_statement.split("-")
-
-        # Iterate over each part
-        for part in parts:
-            # Check if the part has a relationship node (inside square brackets)
-            if "[" in part and "]" in part:
-                # Store starting index of the relationship node
-                start_indices.append(directed_statement.index(part))
-                # Extract relationship info
-                relationship = part[part.index('[')+1: part.index(']')]
-                # Check if relationship info is not "*" and not empty
-                if relationship != "*" and relationship != "":
-                    # Remove ":" from the relationship info if it exists
-                    if ":" in relationship:
-                        relationship = relationship.split(":", 1)[1]
-                    info.append(relationship)
-                    found_flag = True
-
-        # Insert into the dictionary
-        info_dict[i] = (info, start_indices, found_flag)
-
-    return info_dict
-
-def get_direction_arrows(directed_statements: list) -> dict[int, tuple[list[str], list[int], bool]]:
-    """
-    This function extracts the direction arrows from the directed statements
-
-    Input: list of directed statements
-    Output: dictionary of direction arrows containing:
-        - patterns: list of direction patterns
-        - start_indices: list of start indices of direction patterns
-        - found_flag: flag indicating if direction patterns were found
-
-
-    Note:
-    This function is not used in the final version of the code
-    """
-    patterns_dict = {}
-
-    # Iterate over each directed_statement
-    for i, directed_statement in enumerate(directed_statements):
-        # Initialize list to hold directed patterns directions and types
-        patterns = []
-        # Initialize list to hold start indices of patterns
-        start_indices = []
-        # Flag for checking if we found a direction pattern
-        found_flag = False
-
-        # Order of patterns is important, longer patterns should be checked first
-        patterns = ["-->", "<--", "->", "<-", "--", "-"]
-
-        for pattern in patterns:
-            index = directed_statement.find(pattern)
-            while index != -1:
-                # Only add to list if index is not within 2 of already found start_indices (to avoid overlapping patterns) the minimum distance is 2 which is empty node ()
-                if not any([abs(index - idx) <= 2 for idx in start_indices]):
-                    patterns.append(pattern)
-                    start_indices.append(index)
-                    found_flag = True
-                # Continue to look for pattern after the current index + pattern length
-                index = directed_statement.find(pattern, index + len(pattern))
-
-        # Insert into the dictionary
-        patterns_dict[i] = (patterns, start_indices, found_flag)
-
-    return patterns_dict
-
-def identify_nodes(directed_statments: list, relationship_info: dict, schema: str) -> dict[int, dict[str, dict]]:
-    """
-    Function that identifies the nodes in the directed_statments and returns them in a dictionary, only works if 
-    relationship node is present
-
-    Input: list of directed_statments, relationship_info, schema
-    Output: dictionary of identified nodes containing:
-        - source: dictionary of source nodes
-        - target: dictionary of target nodes
-    """
-    # Convert schema string to list of tuples
-    schema = [tuple(item.split(", ")) for item in schema.strip("()").split("), (")]
-    nodes_dict = {}
-
-    # Iterate over each directed_statment
-    for i, directed_statment in enumerate(directed_statments):
-        # Check if the relationship_info status for this directed_statment is True
-        if relationship_info[i][2]:
-            # Get relationship info in this directed_statment
-            directed_statment_relationship_info = relationship_info[i][0][0]
-
-            # If the directed_statment_relationship_info info starts with "!", remove it
-            if directed_statment_relationship_info.startswith("!"):
-                directed_statment_relationship_info = directed_statment_relationship_info[1:]
-
-            # Create sub-schema
-            sub_schema = [item for item in schema if item[1] == directed_statment_relationship_info]
-
-            nodes_dict[i] = {}  # Initialize the dict for this directed_statment
-
-            # Check which source/target body parts from the sub-schema are present in the directed_statment
-            for item in sub_schema:
-                # Check for the body parts in the directed_statment
-                for idx, body_part in enumerate([item[0], item[2]]):
-                    start_index = directed_statment.find(body_part)
-                    if start_index != -1:
-                        part_type = 'source' if idx == 0 else 'target'
-                        # save info in separate keys for 'source' and 'target'
-                        nodes_dict[i][part_type] = {"directed_statment": i, "part": part_type, "name": body_part, "start_index": start_index, "schema_item": item}
-    
-    return nodes_dict
-
 
 def split_into_substatements(statments: list) -> list[str]:
     """

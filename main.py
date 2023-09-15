@@ -56,7 +56,7 @@ if __name__ == '__main__':
     for i in range(74):
         print("===============================================================================")
         print("Statement number: ", i)
-        final_evaluation.append(main('examples.csv', i))
+        final_evaluation.append(main('examples2.csv', i))
     print("===============================================================================")
     print("Final evaluation:")
     if all(final_evaluation):
