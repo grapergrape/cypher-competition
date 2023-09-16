@@ -9,7 +9,7 @@ Gašper Škornik
 
 This code consists of several Python scripts that are used to pre-process the data, execute the main program, and reconstruct the results. It reads a CSV file, processes the Cypher queries, and outputs the results. It works by extracting just the part of the cypher query that is directed, then it validates the direction of that part based on schema, extracts the vectors and paths from the corrected sub query and inserts them into the original query.
 
-After finding out that number of lines is included as a criteria in the competition I've went ahead and went all in on the regex-less vector validation, since I've probably already had too much lines before.
+Upon realizing that the number of lines is a part of the competition's evaluation criteria, I decided to go all in on regex-less vector validation, especially given the likely excess of lines already present.
 
 ## Flow
 
@@ -28,7 +28,7 @@ Extracted sequence:
 Output after insertion of sequence:
 MATCH (a:Person:Actor)-[:ACTED_IN]->(:Movie) RETURN a, count(*)
 
-The script also automatically validates the output and it's overall performance.
+The script suite also includes automated validation of output and gauging of overall performance.
 
 ## Scripts
 
@@ -38,7 +38,7 @@ The script also automatically validates the output and it's overall performance.
 
 - `reconstruction.py`: This helper script is used to reconstruct the results. It takes the output from the main script and reconstructs the results in a more readable format.
 
-- `dicts.py`: This helper script is used to store rleevant information about source/target nodes, relationship nodes in organized dictionaries.
+- `dicts.py`: This auxiliary script is utilized to store pertinent information about source/target nodes and relationship nodes in organized dictionaries.
 
 ## Usage
 
@@ -48,4 +48,4 @@ Please ensure that the required input file `examples.csv` is present in the same
 
 ## License
 
-Original Licence provided from the competition author
+The original license is provided by the competition author and is present within the repo.
