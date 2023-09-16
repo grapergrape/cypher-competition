@@ -12,16 +12,19 @@ def main(csv_path: str, row_number: int) -> bool:
     """
     with open(csv_path, 'r') as csv_file:
         csv_reader = csv.reader(csv_file)
+        # Skip the header
         next(csv_reader)
-        for i in range(row_number):
+        for _ in range(row_number):
             next(csv_reader)
         row = next(csv_reader)
 
-        # Call main processing funciton on input cypher statemenet
+        # Call main preprocessing funciton on input cypher statemenet which also validates the cypher direction
         output, variable_length_flag = prepare_string(row)
 
         # Check if the input statement is of variable length (contains *)
         if not variable_length_flag:
+            # Call main processing function on input cypher statemenet
+            # Triple string quotes are used so this code can work for older versions of python
             solution = solver(output, f'''{convert_to_single_line(row[0])}''')
         else:
             # When variable length is present, the output should just match the input statement
@@ -56,7 +59,7 @@ if __name__ == '__main__':
     for i in range(74):
         print("===============================================================================")
         print("Statement number: ", i)
-        final_evaluation.append(main('examples2.csv', i))
+        final_evaluation.append(main('examples.csv', i))
     print("===============================================================================")
     print("Final evaluation:")
     if all(final_evaluation):

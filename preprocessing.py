@@ -1,4 +1,5 @@
 from dicts import extract_relationship, identify_nodes
+
 def check_brackets(s: str) -> bool:
     """
     This function checks if the cypher query contains variable length relationships as those are not supposed
@@ -111,7 +112,7 @@ def get_mappings(query: str, schema: str) -> str:
     return query
 
 
-def process_relationship(cypher: str, schema: str) -> str:
+def process_relationship(cypher: str, schema: str) -> str | list[tuple[str, str, str]]:
     """
     This function processes the relationships in the cypher query to be more similar to the schema, removes abnormalities
     If there is multiple relationships between two nodes, it will only keep the first one, 
@@ -155,9 +156,9 @@ def process_relationship(cypher: str, schema: str) -> str:
         elif not processing_relationship:
             processed_cypher += char
 
-    return processed_cypher
+    return processed_cypher, triples
 
-def process_target_source(cypher: str, schema: str) -> str:
+def process_target_source(cypher: str, triples: list) -> str:
     """
     This function processes the target and source nodes in the cypher query to be more similar to the schema
 
@@ -165,12 +166,6 @@ def process_target_source(cypher: str, schema: str) -> str:
     Input: cypher query, schema
     Output: cypher query with target and source nodes processed
     """
-
-    # Split the schema by "), (" to get a list of raw triples
-    raw_triples = schema.strip("()").split("), (")
-
-    # For each raw triple, split by ", " to get the nodes and relationship
-    triples = [triple.split(", ") for triple in raw_triples if triple.strip()]
 
     for triple in triples:
         source_node, relation, target_node = [t.strip(' `') for t in triple]
@@ -419,7 +414,7 @@ def check_syntax(cypher_substring: str, schema: list) -> bool:
 
     return False
 
-def validate_direction(substatements: list, relationship_dict: dict, schema: str, identified_nodes: dict) -> list[str]:
+def validate_direction(substatements: list, relationship_dict: dict, schema: str, identified_nodes: dict) -> list[str] | list[tuple[str, str, str]]:
     """
     Function that validates the direction of the relationships in the substatements
 
@@ -436,27 +431,34 @@ def validate_direction(substatements: list, relationship_dict: dict, schema: str
     for i, substatment in enumerate(substatements):
         # Find the used schema in the substatment
         used_schema = find_used_trios(substatment, schemalist)
+
         # if relationship info status is True and the nodes are identified 
         if relationship_dict[i][2] and bool(identified_nodes[i]):
             for schema in used_schema:
                 # Find the position of "->" or "<-" symbol
                 arrow_forward_position = substatment.find("-[{}]->".format(schema[1]))
                 arrow_backward_position = substatment.find("<-[{}]-".format(schema[1]))
+                # Find the position of the source and target nodes
                 source_position = substatment.find(schema[0])
                 relation_position = substatment.find(schema[1])
                 target_position = substatment.find(schema[2])
+                # Logic if the source is not present 
                 if source_position == -1:
                     if target_position > relation_position and arrow_backward_position != -1 and arrow_forward_position ==-1:
                         substatment = substatment.replace(f"<-[{schema[1]}]-", f"-[{schema[1]}]->")
                     elif target_position < relation_position and arrow_backward_position == -1 and arrow_forward_position !=-1:
                         substatment = substatment.replace(f"-[{schema[1]}]->", f"<-[{schema[1]}]-")
+                # Logic if the target is not present
                 elif target_position == -1:
                     if source_position > relation_position and arrow_backward_position == -1 and arrow_forward_position !=-1:
                         substatment = substatment.replace(f"-[{schema[1]}]->", f"<-[{schema[1]}]-")
                     elif source_position < relation_position and arrow_backward_position != -1 and arrow_forward_position ==-1:
                         substatment = substatment.replace(f"<-[{schema[1]}]-", f"-[{schema[1]}]->")
+                # If neither source nor target is present, we return the original substatment
+                # If a node is defined but uses a weird marking it should've been correct in get_mappings function
                 elif source_position == -1 and target_position == -1:
                     continue
+                # Logic if both source and target are present
                 elif source_position != -1 and target_position != -1:
                     if source_position > target_position and arrow_backward_position == -1 and arrow_forward_position !=-1:
                         substatment = substatment.replace(f"-[{schema[1]}]->", f"<-[{schema[1]}]-")
@@ -465,6 +467,7 @@ def validate_direction(substatements: list, relationship_dict: dict, schema: str
 
             final_statments.append(substatment)
         else:
+            # The relationship node is not present
             # Remove the brackets from the substatment, if present, when the relationship node is not identified
             substatment = remove_brackets(substatment)
             for schema in used_schema:
@@ -473,6 +476,8 @@ def validate_direction(substatements: list, relationship_dict: dict, schema: str
                 arrow_backward_position = substatment.find("<--".format(schema[1]))
                 source_position = substatment.find(schema[0])
                 target_position = substatment.find(schema[2])
+
+                # Same logic as above, but without the relationship node
                 if target_position > source_position and arrow_backward_position != -1 and arrow_forward_position ==-1:
                     substatment = substatment.replace("<--", "-->")
                 elif target_position < source_position and arrow_backward_position == -1 and arrow_forward_position !=-1:
@@ -481,7 +486,7 @@ def validate_direction(substatements: list, relationship_dict: dict, schema: str
                     continue
             final_statments.append(substatment)
 
-    return final_statments
+    return final_statments, schemalist
 
 def prepare_string(row: list) -> tuple[list[str], bool]:
     """
@@ -490,8 +495,8 @@ def prepare_string(row: list) -> tuple[list[str], bool]:
     Input: row from the dataframe
     Output: list of processed strings
     """
-    statement = convert_to_single_line(row[0])
-    statement = get_mappings(statement, row[1])
+    # Get the mappings between the unknown nodes in query and the schema, for example this converts nodes like (a) to (a:Person)
+    statement = get_mappings(convert_to_single_line(row[0]), row[1])
 
     # Extract the relevant part containing vectors
     directed_statment = extract_directed_statement(statement)
@@ -503,23 +508,24 @@ def prepare_string(row: list) -> tuple[list[str], bool]:
     
     # Preprocess nodes to not contain unrelevant data
     for i in range(len(directed_statment)):
-        directed_statment[i] = process_relationship(directed_statment[i], row[1])
-        directed_statment[i] = process_target_source(directed_statment[i], row[1])
+        directed_statment[i],triples = process_relationship(directed_statment[i], row[1])
+        directed_statment[i] = process_target_source(directed_statment[i], triples)
 
     # Split the directed_statment into substatements
     substatements= split_into_substatements(directed_statment)
 
-    # Get the node info from the substatements
+    # Get the node info from the substatements, 
+    # relationship info is a dict but in the final  version only the bool value is used
+
     relationship_info = extract_relationship(substatements)
     nodes = identify_nodes(substatements, relationship_info, row[1])
 
     # Validate the direction of the relationships in the substatements
-    directed_statment = validate_direction(substatements, relationship_info, row[1], nodes)
+    directed_statment , schema = validate_direction(substatements, relationship_info, row[1], nodes)
 
     # Check the syntax of the substatements before returning them
     output = [None] * len(directed_statment)
     for i in range(len(directed_statment)):
-        schema = extract_schema(row[1])
         used_schema = find_used_trios(substatements[i], schema)
         if check_syntax(directed_statment[i], used_schema):
             output[i] = directed_statment[i]
